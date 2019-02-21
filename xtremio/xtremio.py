@@ -2,7 +2,7 @@
 
 XtremIO library
 
-Version 0.02
+Version 0.1
 
 Scott Howard
 scott.howard@emc.com
