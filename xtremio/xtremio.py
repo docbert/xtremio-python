@@ -26,6 +26,7 @@ class XtremIO(object):
             self._password = password
             self._httpauth = HTTPBasicAuth(username, password)
             self._checkcert = checkcert
+            self._cluster_name = "";
         else:
             try:
                 errorresp = json.loads(req.content.decode('utf-8'))
@@ -67,7 +68,7 @@ class XtremIO(object):
             return('?name=' + quote_plus(id))
         elif type(id) == int:
             if id != -1:
-                return('/' + id + "?")
+                return('/' + str(id) + "?")
             else:
                 return('?')
         else:
@@ -78,12 +79,12 @@ class XtremIO(object):
         proplist='?'
         if prop:
             proplist='?full=1&prop=' + '&prop='.join(prop)
-        return self._request('GET', '/api/json/v2/types/' + otype + proplist + self._cluster())
+        return self._request('GET', '/api/json/v2/types/' + otype + proplist + self._cluster())[otype]
 
 
     def _get(self, otype, id, value=None):
         resp = self._request('GET', '/api/json/v2/types/' + otype + self._name_or_id(id) + self._cluster())
-	if value:
+        if value:
             try:
                 resp = resp['content'][value]
             except:
@@ -91,7 +92,7 @@ class XtremIO(object):
         return(resp)
 
     def _create(self, otype, body=None):
-        return self._request('POST', '/api/json/v2/types/' + otype  + self._name_or_id(-1) + self._cluster(), body)
+        return (self._request('POST', '/api/json/v2/types/' + otype  + self._name_or_id(-1) + self._cluster(), body))['links'][0]
 
     def _modify(self, otype, id, body=None):
         return self._request('PUT', '/api/json/v2/types/' + otype  + self._name_or_id(id) + self._cluster(), body)
@@ -100,11 +101,13 @@ class XtremIO(object):
         return self._request('DELETE', '/api/json/v2/types/' + otype  + self._name_or_id(id) + self._cluster(), body)
 
 
-    def get_volumes(self):
-        return self._get_list('volumes', ['name','sys-name','vol-size','guid'])
+    def get_volumes(self, prop=None):
+        if not prop:
+            prop=['name','sys-name','vol-size','guid'];
+        return self._get_list('volumes', prop)
 
-    def get_volume(self, id, value=None):
-        return self._get('volumes', id, value)
+    def get_volume(self, id):
+        return self._get('volumes', id)['content']
 
     def create_volume(self, name, size):
         return self._create('volumes', {'vol-name': name, 'vol-size': size})
@@ -125,14 +128,8 @@ class XtremIO(object):
     def create_volume_mapping(self, volume, ig):
         return self._create('lun-maps', {'vol-id': volume, 'ig-id': ig})
 
-    def get_volume_mapping(self, volume, ig, value):   # XXX Needs to handle volume/ig ID not just name
-        resp = self._request('GET', '/api/json/v2/types/lun-maps?full=1&filter=vol-name:eq:' + volume + '&filter=ig-name:eq:' + ig + '&cluster-name=' + self._cluster())
-        if value:
-            try:
-                resp = resp['lun-maps'][0][value]
-            except:
-                resp = None
-        return(resp)
+    def get_volume_mapping(self, volume, ig):   # XXX Needs to handle volume/ig ID not just name
+        return self._request('GET', '/api/json/v2/types/lun-maps?full=1&filter=vol-name:eq:' + volume + '&filter=ig-name:eq:' + ig + '&cluster-name=' + self._cluster())
 
     def remove_volume_mapping(self, volume, ig):
         mapindex = self.get_volume_mapping(volume, ig, 'index')
@@ -141,8 +138,11 @@ class XtremIO(object):
         return self._remove('lun-maps', mapindex)
 
 
-    def get_ig(self, id, value=None):
-        return self._get('initiator-groups', id, value)
+    def get_igs(self, prop=None):
+        return self._get_list('initiator-groups', prop)
+
+    def get_ig(self, id):
+        return self._get('initiator-groups', id)
 
     def create_ig(self, name):
         return self._create('initiator-groups', {'ig-name': name})
@@ -161,8 +161,11 @@ class XtremIO(object):
 
 
 
-    def get_initiator(self, id, value=None):
-        return self._get('initiators', id, value)
+    def get_initiators(self, prop=None):
+        return self._get_list('initiators', prop)
+
+    def get_initiator(self, id):
+        return self._get('initiators', id)
 
     def create_initiator(self, name, ig, address, os):
         return self._create('initiators', {'initiator-name': name, 'ig-id': ig, 'port-address': address, 'operating-system': os})
@@ -182,8 +185,11 @@ class XtremIO(object):
         return self._modify('initiators', id, body)
 
 
-    def get_cg(self, id, value=None):
-        return self._get('consistency-groups', id, value)
+    def get_cgs(self, prop=None):
+        return self._get_list('consistency-groups', prop)
+
+    def get_cg(self, id):
+        return self._get('consistency-groups', id)
 
     def create_cg(self, name, vollist=[]):
         return self._create('consistency-groups', {'consistency-group-name': name, 'vol-list': vollist})
@@ -202,8 +208,8 @@ class XtremIO(object):
             return self._remove('consistency-group-volumes', id, {'vol-id': remove})
 
 
-    def get_snapshot(self, id, value=None):
-        return self._get('snapshots', id, value)
+    def get_snapshot(self, id):
+        return self._get('snapshots', id)
 
     def create_snapshot(self, cg=None, ss=None, vol=None, ssname=None, suffix=None, readonly=False):
         if [cg, ss, vol].count(None) != 2:
@@ -259,8 +265,8 @@ class XtremIO(object):
             body.update({'backup-snap-suffix':backupsuffix})
         return self._create('snapshots', body)
 
-    def get_snapshot_set(self, id, value=None):
-        return self._get('snapshot-sets', id, value)
+    def get_snapshot_set(self, id):
+        return self._get('snapshot-sets', id)
 
     def remove_snapshot_set(self, id):
         return self._remove('snapshot-sets', id);
@@ -271,8 +277,8 @@ class XtremIO(object):
     def get_clusters(self):
         return self._get_list('clusters')
 
-    def get_cluster(self, id, value=None):
-        return self._get('clusters', id, value)
+    def get_cluster(self, id):
+        return self._get('clusters', id)
 
     def set_cluster(self, cluster=None):
         if cluster:
