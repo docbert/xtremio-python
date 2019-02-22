@@ -37,13 +37,14 @@ The cluster selection can be cleared by running the same command with no options
 Commands
 --------
 
-Most commands follow a common format of action_object.  eg, to create a volume the
+Most commands follow a common format of action_object().  eg, to create a volume the
 command is create_volume().  To remove a snapshots it's remove_snapshot(), and so on.
 
 Object Types
 ------------
 
-The current object types are currently supported :
+The object types currently supported are :
+
 -  volume
 -  ig                  (Initiator Group)
 -  initiator 
@@ -66,7 +67,7 @@ of the command, where XXX is the object type.  eg, to get a list of all volumes,
     [{u'index': 1, u'name': u'ScottH-DS', u'href': u'https://xtremio4.scxtremiolab.com/api/json/v2/types/volumes/1', u'sys-name': u'mycluster', u'vol-size': u'1073741824', u'guid': u'b515b55e44ef4ce8a0f090ecb598f6a1'}, {u'index': 2, u'name': u'MyDS', u'href': u'https://xtremio4.scxtremiolab.com/api/json/v2/types/volumes/2', u'sys-name': u'mycluster', u'vol-size': u'2147483648', u'guid': u'129a9b43ea494049a19698d13646daca'},
 
 By default, only a small number of attributes for each object are returned, however you can also pass a list of additional
-attributes to be added :
+attributes to be returned :
 
 .. code-block:: python
 
@@ -118,7 +119,7 @@ Creating a CG (Consistency Group) requires a list of volumes :
     >>> x.create_cg('MyCG', ['MyVol1','MyVol2'])
     {u'index': 3, u'href': u'https://xtremio4.scxtremiolab.com/api/json/v2/types/consistency-groups/3', u'rel': u'self'}
 
-Creating a snapshot is different as uses names arguments.  The source of the snapshot can be any of a Consistency Group (cg=xxx), a
+Creating a snapshot is different as it uses named arguments.  The source of the snapshot can be any of a Consistency Group (cg=xxx), a
 Snapshot Set (ss=xxx) or a Volume (vol=xxx). You can also spceify the resulting snapshots set name (ssname=xxx), the volume suffix
 appended to the snapshots (suffix=xxx) and whether you want a readonly snapshot or not (readonly=True/False, default is false for read-write) :
 
@@ -153,7 +154,7 @@ Volume and Snapshot :
 IG :
 
 - name
-- os  (os modifies the os of all initiators in the IG)
+- os  (modifies the os of all initiators in the IG)
 
 Initiator :
 
