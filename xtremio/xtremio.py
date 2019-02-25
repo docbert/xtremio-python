@@ -41,6 +41,9 @@ class XtremIO(object):
         print uri
         req = requests.request(method, 'https://' + self._xms + uri, auth=self._httpauth, verify=self._checkcert, data=json.dumps(body))
 
+        if method == 'GET' and req.status_code == 400:
+            return None
+
         resp = None
         try:
             resp = json.loads(req.content.decode('utf-8'))
@@ -53,8 +56,8 @@ class XtremIO(object):
             except:
                 message = str(req.status_code) + ' ' + req.reason
             raise Exception(message)
-
         return(resp)
+
 
     def _cluster(self):
         if (self._cluster_name):
@@ -89,6 +92,11 @@ class XtremIO(object):
                 resp = resp['content'][value]
             except:
                 resp = None
+        else:
+            try:
+                resp = resp['content']
+            except:
+                pass
         return(resp)
 
     def _create(self, otype, body=None):
@@ -107,7 +115,7 @@ class XtremIO(object):
         return self._get_list('volumes', prop)
 
     def get_volume(self, id):
-        return self._get('volumes', id)['content']
+        return self._get('volumes', id)
 
     def create_volume(self, name, size):
         return self._create('volumes', {'vol-name': name, 'vol-size': size})
@@ -129,13 +137,18 @@ class XtremIO(object):
         return self._create('lun-maps', {'vol-id': volume, 'ig-id': ig})
 
     def get_volume_mapping(self, volume, ig):   # XXX Needs to handle volume/ig ID not just name
-        return self._request('GET', '/api/json/v2/types/lun-maps?full=1&filter=vol-name:eq:' + volume + '&filter=ig-name:eq:' + ig + '&cluster-name=' + self._cluster())
+        lunmap = self._request('GET', '/api/json/v2/types/lun-maps?full=1&filter=vol-name:eq:' + volume + '&filter=ig-name:eq:' + ig + '&cluster-name=' + self._cluster())
+        try:
+            return lunmap['lun-maps'][0]
+        except:
+            return None
+
 
     def remove_volume_mapping(self, volume, ig):
-        mapindex = self.get_volume_mapping(volume, ig, 'index')
+        mapindex = self.get_volume_mapping(volume, ig)
         if not mapindex:
             raise Exception('volume mapping not found')
-        return self._remove('lun-maps', mapindex)
+        return self._remove('lun-maps', mapindex['index'])
 
 
     def get_igs(self, prop=None):
