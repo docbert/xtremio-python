@@ -41,9 +41,6 @@ class XtremIO(object):
         print uri
         req = requests.request(method, 'https://' + self._xms + uri, auth=self._httpauth, verify=self._checkcert, data=json.dumps(body))
 
-        if method == 'GET' and req.status_code == 400:
-            return None
-
         resp = None
         try:
             resp = json.loads(req.content.decode('utf-8'))
@@ -53,6 +50,8 @@ class XtremIO(object):
         if not req.ok:
             try:
                 message = resp['message']
+                if req.status_code == 400 and method == 'GET' and message == 'obj_not_found':
+                    return None
             except:
                 message = str(req.status_code) + ' ' + req.reason
             raise Exception(message)
@@ -87,16 +86,12 @@ class XtremIO(object):
 
     def _get(self, otype, id, value=None):
         resp = self._request('GET', '/api/json/v2/types/' + otype + self._name_or_id(id) + self._cluster())
-        if value:
-            try:
-                resp = resp['content'][value]
-            except:
-                resp = None
-        else:
-            try:
-                resp = resp['content']
-            except:
-                pass
+        try:
+            resp = resp['content']
+            if value:
+                resp = resp[value]
+        except:
+            resp = None
         return(resp)
 
     def _create(self, otype, body=None):

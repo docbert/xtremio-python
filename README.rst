@@ -3,7 +3,7 @@ XtremIO Python Module
 =====================
 
 
-
+Note that this module is still a work-in-progress and not ready for production use...
 
 
 
