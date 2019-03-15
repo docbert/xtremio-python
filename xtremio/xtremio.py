@@ -38,7 +38,6 @@ class XtremIO(object):
 
     def _request(self, method, uri, body=None):
 
-        print uri
         req = requests.request(method, 'https://' + self._xms + uri, auth=self._httpauth, verify=self._checkcert, data=json.dumps(body))
 
         resp = None
